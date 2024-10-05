@@ -9,7 +9,6 @@ client = pymongo.MongoClient("mongodb://localhost:27017/")
 db = client["your_database_name"]  # replace with your database name
 products_collection = db["products"]  # replace with your collection name
 
-
 # Function to parse price into a float
 def parse_price(price_str):
     price_str = price_str.replace('\n', '').replace('$', '').strip()
@@ -18,17 +17,14 @@ def parse_price(price_str):
     except ValueError:
         return 0.0  # Return 0 if parsing fails
 
-
 # Function to extract keywords from description for similarity matching
 def extract_keywords(description):
     keywords = re.findall(r'\b\w+\b', description.lower())
     return set(keywords)
 
-
 # Function to vectorize products for content-based filtering
 def vectorize_products(products):
     vectorizer = TfidfVectorizer()
-
     descriptions = [' '.join(extract_keywords(product['description'])) for product in products]
     tfidf_matrix = vectorizer.fit_transform(descriptions)
 
@@ -40,7 +36,6 @@ def vectorize_products(products):
     numeric_features = np.nan_to_num(numeric_features, nan=0.0)
 
     return np.hstack((tfidf_matrix.toarray(), numeric_features))
-
 
 # Function to recommend products based on sustainability score and ML-based selections
 def recommend_ml_based(products, user_selected_products):
@@ -59,8 +54,7 @@ def recommend_ml_based(products, user_selected_products):
     # Return the top recommended products (excluding user's own selections)
     return [products[i] for i in recommendations[:5]]
 
-
-# Function to recommend similar products based on sustainability score
+# Function to recommend similar products based on sustainability score and ML-based selections
 def recommend_similar_products(products, current_product, price_range=15):
     current_score = current_product['sustainability_score']
     current_price = parse_price(current_product['price'])
@@ -73,7 +67,7 @@ def recommend_similar_products(products, current_product, price_range=15):
         product_price = parse_price(product['price'])
         product_keywords = extract_keywords(product['description'])
 
-        # Check if product meets criteria (similar price range, higher sustainability score, keyword overlap)
+        # Check if product meets criteria (similar price range, equal or higher sustainability score, keyword overlap)
         if product_score >= current_score and abs(product_price - current_price) <= price_range:
             keyword_match_count = len(current_keywords.intersection(product_keywords))
             recommendations.append((product, keyword_match_count))
@@ -81,7 +75,6 @@ def recommend_similar_products(products, current_product, price_range=15):
     # Sort recommendations by keyword matches and return top 5
     recommendations.sort(key=lambda x: (-x[1], x[0]['price']))  # prioritize by keyword matches and price
     return [r[0] for r in recommendations[:5]]
-
 
 # Example usage
 def main():
@@ -97,9 +90,9 @@ def main():
     recommended_products = recommend_ml_based(products, user_selected_products)
     print("ML-based Recommendations:", recommended_products)
 
+    # Get sustainability recommendations based on user's selected product
     similar_recommended_products = recommend_similar_products(products, user_selected_products[0])
     print("Sustainability Recommendations:", similar_recommended_products)
-
 
 # Run the main function
 if __name__ == "__main__":
