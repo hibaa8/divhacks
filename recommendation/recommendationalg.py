@@ -1,4 +1,7 @@
 import re
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Updated sustainability data
 sustainability_data = {
@@ -33,22 +36,19 @@ sustainability_data = {
 product_data = {
     'product_details': 'Fabric type\n80% cotton\nCare instructions\nMachine Wash\n...',
     'price': '$13\n89',
-    'description': "Women's Ruffle Funny Ankle Socks,Cute Smiling Face Embroidery Frilly Crew Sock...",
+    'description': "Women's Ruffle Funny Ankle Socks...",
     'brand': 'Brand: XIUYANG',
     'color': 'Color: Colour-a'
 }
 
-
 # 1. Extract fabric type from product details
 def extract_fabric_type(product_details):
-    # Find fabric type percentages (e.g., "80% cotton")
     match = re.findall(r'(\d+)%\s*(\w+)', product_details.lower())
     fabric_dict = {}
     if match:
         for percentage, fabric in match:
             fabric_dict[fabric] = int(percentage)
     return fabric_dict
-
 
 # 2. Compute sustainability score based on fabric types
 def compute_sustainability_score(fabric_dict):
@@ -58,8 +58,7 @@ def compute_sustainability_score(fabric_dict):
         if fabric in sustainability_data:
             score += sustainability_data[fabric] * (percentage / 100)
             total_percentage += percentage
-    return score if total_percentage > 0 else None
-
+    return score if total_percentage > 0 else 0  # Return 0 if no valid fabric types
 
 # 3. Parse the price into a float
 def parse_price(price_str):
@@ -67,17 +66,47 @@ def parse_price(price_str):
     try:
         return float(price_str)
     except ValueError:
-        return None
-
+        return 0.0  # Return 0 if parsing fails
 
 # 4. Extract keywords from description for similarity matching
 def extract_keywords(description):
-    # Tokenize and lower case the description
     keywords = re.findall(r'\b\w+\b', description.lower())
     return set(keywords)
 
+# 5. Vectorize products for content-based filtering using description and sustainability score
+def vectorize_products(products):
+    vectorizer = TfidfVectorizer()
 
-# 5. Final recommendation function based on price range, sustainability score, and keywords
+    descriptions = [' '.join(extract_keywords(product['description'])) for product in products]
+    tfidf_matrix = vectorizer.fit_transform(descriptions)
+
+    numeric_features = np.array([[parse_price(product['price']),
+                                  compute_sustainability_score(extract_fabric_type(product['product_details']))]
+                                 for product in products])
+
+    # Replace NaN values with 0
+    numeric_features = np.nan_to_num(numeric_features, nan=0.0)
+
+    return np.hstack((tfidf_matrix.toarray(), numeric_features))
+
+# 6. Calculate similarity between user-selected products and all other products
+def recommend_ml_based(products, user_selected_products):
+    all_products = user_selected_products + products
+    product_vectors = vectorize_products(all_products)
+
+    # Calculate cosine similarity
+    similarity_matrix = cosine_similarity(product_vectors)
+
+    # Get the similarities of the last added (user's selection) with all others
+    user_similarities = similarity_matrix[0, 1:]
+
+    # Sort by similarity score
+    recommendations = np.argsort(-user_similarities)
+
+    # Return the top recommended products (excluding user's own selections)
+    return [products[i] for i in recommendations[:5]]
+
+# 7. Final recommendation function based on price range, sustainability score, and keywords
 def recommend_similar_products(products, current_product, price_range=15):
     current_fabric_dict = extract_fabric_type(current_product['product_details'])
     current_score = compute_sustainability_score(current_fabric_dict)
@@ -101,11 +130,31 @@ def recommend_similar_products(products, current_product, price_range=15):
     recommendations.sort(key=lambda x: (-x[1], x[0]['price']))  # prioritize by keyword matches and price
     return [r[0] for r in recommendations[:5]]
 
-
 # Example usage
 products = [
-    # Add other product dictionaries with similar structure here for recommendation comparison
+    {
+        'product_details': 'Fabric type\n100% recycled polyester\nCare instructions\nMachine Wash\n...',
+        'price': '$18\n99',
+        'description': "Women's Recycled Polyester T-Shirt...",
+        'brand': 'Brand: GreenThreads',
+        'color': 'Color: Blue'
+    },
+    # Add more product dictionaries for recommendation comparison
 ]
 
-recommended_products = recommend_similar_products(products, product_data)
-print(recommended_products)
+user_selected_products = [
+    {
+        'product_details': 'Fabric type\n100% cotton\nCare instructions\nMachine Wash\n...',
+        'price': '$13\n89',
+        'description': "Women's Ruffle Funny Ankle Socks...",
+        'brand': 'Brand: XIUYANG',
+        'color': 'Color: Colour-a'
+    }
+]
+
+# Get recommendations based on sustainability score and ML-based past selections
+recommended_products = recommend_ml_based(products, user_selected_products)
+print("ML-based Recommendations:", recommended_products)
+
+similar_recommended_products = recommend_similar_products(products, user_selected_products[0])
+print("Sustainability Recommendations:", similar_recommended_products)
