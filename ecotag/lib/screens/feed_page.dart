@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ecotag/widgets/drawer.dart'; // Import the drawer widget
 
 class FeedPage extends StatefulWidget {
   const FeedPage({Key? key}) : super(key: key);
@@ -14,6 +15,7 @@ class _FeedPageState extends State<FeedPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
+      drawer: MyDrawer(), // Add drawer to the screen
       body: ListView( // Allow scrolling if content overflows
           children: [
             const SizedBox(height: 10), // Increase padding to move text down
