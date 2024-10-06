@@ -1,0 +1,12 @@
+use('sustainable-products-1');
+
+db.createCollection('tops');
+db.createCollection('pants');
+db.createCollection('sweaters');
+db.createCollection('jackets');
+db.createCollection('other');
+
+db.getCollectionNames();
+
+db.top.find()
+
