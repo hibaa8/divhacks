@@ -1,3 +1,5 @@
+import 'package:ecotag/screens/closet_page.dart';
+import 'package:ecotag/screens/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart'; // Import your splash screen
 import 'screens/home_page.dart'; // Import your home page
@@ -18,6 +20,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => SplashScreen(), // Splash Screen
         '/home': (context) => HomePage(), // Home Page
         '/login': (context) => LoginPage(), // Login Page
+        '/profile': (context) => ProfilePage(),// Closet Page
       },
     );
   }

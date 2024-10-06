@@ -4,7 +4,7 @@ import 'package:ecotag/screens/home_content_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ecotag/widgets/bottom_navbar.dart';
-
+import 'package:ecotag/widgets/drawer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -22,6 +22,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
+      drawer: MyDrawer(),
       body: PageView(
         controller: _pageController,
         onPageChanged: (newIndex) {

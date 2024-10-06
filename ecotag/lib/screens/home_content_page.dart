@@ -1,3 +1,4 @@
+import 'package:ecotag/widgets/drawer.dart';
 import 'package:flutter/material.dart';
 
 class HomeContentPage extends StatefulWidget {
@@ -22,7 +23,9 @@ class _HomeContentPageState extends State<HomeContentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: MyDrawer(),
       backgroundColor: const Color(0xFFF8F9FD), // Light background color
+       // Add drawer to the screen
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
         child: Center(
@@ -33,14 +36,14 @@ class _HomeContentPageState extends State<HomeContentPage> {
               // App Logo
               Image.asset(
                 'assets/EcoTag.png',
-                width: 240, // Adjust size of the logo
-                height: 240,
+                width: 180, // Adjust size of the logo
+                height: 180,
               
               ),
 
               // App Name
               const Text(
-                'ecotag',
+                'fabrich',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

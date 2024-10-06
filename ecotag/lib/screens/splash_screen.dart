@@ -57,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen> {
               opacity: 1.0,
               duration: Duration(seconds: 1),
               child: Text(
-                'ecotag',
+                'fabrich',
                 style: GoogleFonts.lato( // Using Google Font 'Lato'
                   textStyle: TextStyle(
                     fontSize: 36, // Larger text size for a modern look
@@ -74,3 +74,6 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+
+
+
