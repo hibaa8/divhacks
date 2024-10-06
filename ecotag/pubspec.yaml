@@ -37,7 +37,7 @@ dependencies:
   google_nav_bar: ^5.0.6
   google_maps_flutter: ^2.2.8
   carousel_slider: ^4.2.0
-
+  mongo_dart: ^0.10.3
 
 dev_dependencies:
   flutter_test:
