@@ -1,71 +1,99 @@
 import re
 import pymongo
+import os
+from dotenv import load_dotenv
+from pymongo.mongo_client import MongoClient
+import certifi
 
-# Updated sustainability data
+load_dotenv()
+
 sustainability_data = {
-    "organic cotton": 10,
+    "organic": 10,
     "hemp": 9,
     "bamboo": 8,
-    "recycled polyester": 7,
+    "polyester": 7,
     "linen": 8,
-    "tencel (lyocell)": 8,
-    "recycled wool": 7,
-    "conventional cotton": 5,
+    "tencel": 8,
+    "cotton": 5,
     "silk": 5,
-    "recycled nylon": 6,
-    "polyester": 3,
-    "nylon": 2,
+    "nylon": 6,
     "acrylic": 3,
     "spandex": 4,
     "viscose": 5,
-    "leather (sustainable)": 6,
-    "leather (conventional)": 3,
-    "PVC (faux leather)": 2,
+    "leather": 3,
+    "PVC": 2,
     "cupro": 7,
     "jute": 9,
     "ramie": 8,
     "modal": 7,
     "wool": 6,
-    "alpaca wool": 7,
-    "recycled acrylic": 5
+    "alpaca": 7,
+    "recycled": 5,
 }
 
-# Function to extract fabric type from product details
-def extract_fabric_type(product_details):
-    match = re.findall(r'(\d+)%\s*(\w+)', product_details.lower())
-    fabric_dict = {}
-    if match:
-        for percentage, fabric in match:
-            fabric_dict[fabric] = int(percentage)
-    return fabric_dict
+class SustainabilityCalculator:
+    def __init__(self):
+        self.client = MongoClient(os.getenv("MONGODB_URI"), tlsCAFile=certifi.where())
+        self.db = self.client[os.getenv("DB_NAME")]
 
-# Function to compute sustainability score based on fabric types
-def compute_sustainability_score(fabric_dict):
-    score = 0
-    total_percentage = 0
-    for fabric, percentage in fabric_dict.items():
-        if fabric in sustainability_data:
-            score += sustainability_data[fabric] * (percentage / 100)
-            total_percentage += percentage
-    return score if total_percentage > 0 else 0
+    def extract_fabric_type(self, fabric):
+        components = fabric.split()
+        fabric_dict = {}
 
-# Connect to MongoDB
-client = pymongo.MongoClient("mongodb://localhost:27017/")
-db = client["your_database_name"]  # replace with your database name
-products_collection = db["products"]  # replace with your collection name
+        for i in range(0, len(components) - 1, 2):
+            percentage = components[i]
+            fabric = components[i + 1]
+            fabric_dict[fabric] = percentage
 
-# Process each product and calculate sustainability scores
-def update_sustainability_scores():
-    for product in products_collection.find():
-        fabric_dict = extract_fabric_type(product['product_details'])
-        score = compute_sustainability_score(fabric_dict)
+        return fabric_dict
 
-        # Update the product with the calculated sustainability score
-        products_collection.update_one(
-            {'_id': product['_id']},
-            {'$set': {'sustainability_score': score}}
-        )
-        print(f"Updated product ID {product['_id']} with sustainability score: {score}")
+    def compute_sustainability_score(self, fabric_dict):
+        score = 0
+        total_percentage = 0
+        for fabric, percentage in fabric_dict.items():
+    
+            if isinstance(percentage, str):
+                try:
+                    percentage = int(percentage[:2])  
+                except ValueError:
+                    continue
+            percentage = int(percentage)
+            fabric = fabric.lower()
 
-# Run the update function
-update_sustainability_scores()
+            if fabric in sustainability_data:
+                score += sustainability_data[fabric] * (percentage / 100)
+                total_percentage += percentage
+
+        return score if total_percentage > 0 else 0
+
+    def update_sustainability_scores(self):
+        collections = self.db.list_collection_names()
+
+        for collection_name in collections:
+            collection = self.db[collection_name]
+            for product in collection.find():
+                if 'fabric' in product:
+                    fabric_dict = self.extract_fabric_type(product['fabric'])
+                elif 'product_details' in product:
+                    fabric_dict = self.extract_fabric_type(product['product_details'])
+                else:
+                    continue
+
+                score = self.compute_sustainability_score(fabric_dict)
+
+
+                collection.update_one(
+                    {'_id': product['_id']}, 
+                    {'$set': {'env-index': score}}  
+                )
+
+                print(f"Updated product ID {product['_id']} with sustainability score: {score}")
+
+
+# Example usage
+if __name__ == '__main__':
+    uri = os.getenv("MONGODB_URI")
+    db_name = os.getenv("DB_NAME")
+
+    sustainability_calculator = SustainabilityCalculator(uri, db_name)
+    sustainability_calculator.update_sustainability_scores()

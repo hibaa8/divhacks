@@ -3,97 +3,106 @@ import pymongo
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
+import os
+from dotenv import load_dotenv
+from update_sustainability import SustainabilityCalculator
 
-# Connect to MongoDB
-client = pymongo.MongoClient("mongodb://localhost:27017/")
-db = client["your_database_name"]  # replace with your database name
-products_collection = db["products"]  # replace with your collection name
+load_dotenv()
 
-# Function to parse price into a float
-def parse_price(price_str):
-    price_str = price_str.replace('\n', '').replace('$', '').strip()
-    try:
-        return float(price_str)
-    except ValueError:
-        return 0.0  # Return 0 if parsing fails
+class ProductRecommender:
+    def __init__(self, mongo_uri, db_name, user_case):
+        self.client = pymongo.MongoClient(mongo_uri)
+        self.db = self.client[db_name]
+        self.user_case = user_case
+        self.products_collection = self.db[user_case['type']]  
 
-# Function to extract keywords from description for similarity matching
-def extract_keywords(description):
-    keywords = re.findall(r'\b\w+\b', description.lower())
-    return set(keywords)
 
-# Function to vectorize products for content-based filtering
-def vectorize_products(products):
-    vectorizer = TfidfVectorizer()
-    descriptions = [' '.join(extract_keywords(product['description'])) for product in products]
-    tfidf_matrix = vectorizer.fit_transform(descriptions)
+    @staticmethod
+    def parse_price(price_str):
+        price_str = price_str.replace('\n', '').replace('$', '').strip()
+        try:
+            return float(price_str)
+        except ValueError:
+            return 0.0  #
 
-    numeric_features = np.array([[parse_price(product['price']),
-                                  product['sustainability_score']]
-                                 for product in products])
+    @staticmethod
+    def extract_keywords(description):
+        keywords = re.findall(r'\b\w+\b', description.lower())
+        return set(keywords)
 
-    # Replace NaN values with 0
-    numeric_features = np.nan_to_num(numeric_features, nan=0.0)
+    def vectorize_products(self, products):
+        vectorizer = TfidfVectorizer()
+        descriptions = [' '.join(self.extract_keywords(product['description'])) for product in products]
+        tfidf_matrix = vectorizer.fit_transform(descriptions)
 
-    return np.hstack((tfidf_matrix.toarray(), numeric_features))
+        numeric_features = np.array([[self.parse_price(product['price']),
+                                      product.get('env-index', 0)]  # Default to 0 if env-index not present
+                                     for product in products])
 
-# Function to recommend products based on sustainability score and ML-based selections
-def recommend_ml_based(products, user_selected_products):
-    all_products = user_selected_products + products
-    product_vectors = vectorize_products(all_products)
+        numeric_features = np.nan_to_num(numeric_features, nan=0.0)
 
-    # Calculate cosine similarity
-    similarity_matrix = cosine_similarity(product_vectors)
+        return np.hstack((tfidf_matrix.toarray(), numeric_features))
 
-    # Get the similarities of the last added (user's selection) with all others
-    user_similarities = similarity_matrix[0, 1:]
 
-    # Sort by similarity score
-    recommendations = np.argsort(-user_similarities)
+    def recommend_ml_based(self, user_selected_products):
+        all_products = user_selected_products + [self.user_case] 
+        product_vectors = self.vectorize_products(all_products)
 
-    # Return the top recommended products (excluding user's own selections)
-    return [products[i] for i in recommendations[:5]]
+        similarity_matrix = cosine_similarity(product_vectors)
+        user_similarities = similarity_matrix[0, 1:]
+        recommendations = np.argsort(-user_similarities)
+        all_products_list = list(self.products_collection.find())
+        return [all_products_list[i] for i in recommendations[:3]]
 
-# Function to recommend similar products based on sustainability score and ML-based selections
-def recommend_similar_products(products, current_product, price_range=15):
-    current_score = current_product['sustainability_score']
-    current_price = parse_price(current_product['price'])
-    current_keywords = extract_keywords(current_product['description'])
 
-    recommendations = []
+    def recommend_similar_products(self):
+        current_score = self.user_case.get('env-index', 0)
+        current_price = self.parse_price(self.user_case['price'])
+        current_keywords = self.extract_keywords(self.user_case['description'])
 
-    for product in products:
-        product_score = product['sustainability_score']
-        product_price = parse_price(product['price'])
-        product_keywords = extract_keywords(product['description'])
+        recommendations = []
 
-        # Check if product meets criteria (similar price range, equal or higher sustainability score, keyword overlap)
-        if product_score >= current_score and abs(product_price - current_price) <= price_range:
-            keyword_match_count = len(current_keywords.intersection(product_keywords))
-            recommendations.append((product, keyword_match_count))
+        for product in self.products_collection.find():
+            product_score = product.get('env-index', 0)
+            product_price = self.parse_price(product['price'])
+            product_keywords = self.extract_keywords(product['description'])
+            if product_score >= current_score - 2 and product_score > current_score and abs(product_price - current_price) <= 15:
+                keyword_match_count = len(current_keywords.intersection(product_keywords))
+                recommendations.append((product, keyword_match_count))
 
-    # Sort recommendations by keyword matches and return top 5
-    recommendations.sort(key=lambda x: (-x[1], x[0]['price']))  # prioritize by keyword matches and price
-    return [r[0] for r in recommendations[:5]]
+        recommendations.sort(key=lambda x: (-x[1], x[0]['price']))
+        return [r[0] for r in recommendations[:3]]
+    
+    def update_user_history(self,cases):
+        self.db['user-history'].insert_many(cases)
 
-# Example usage
-def main():
-    # Fetch products from MongoDB
-    products = list(products_collection.find())
 
-    # User selected products
-    user_selected_products = [
-        products[0]  # Assuming the first product is selected by the user
-    ]
 
-    # Get recommendations based on sustainability score and ML-based past selections
-    recommended_products = recommend_ml_based(products, user_selected_products)
-    print("ML-based Recommendations:", recommended_products)
+if __name__ == "__main__":
+    mongo_uri = "mongodb+srv://hibaaltaf98:HotChocolate333!@cluster0.eokpf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    db_name = 'sustainable-products-1'
+    
+    user_case = {
+        "product_details": "90% bamboo, 10% organic cotton",
+        "price": "65",
+        "description": "Red cotton t-shirt medium",
+        "brand": "Quince",
+        "color": "Red",
+        "url": "https://quince.com/women/apparel/top/bamboo-cotton",
+        "image": "https://quince.com/images/top18.jpg",
+        "type": "shirt"  
+    }
 
-    # Get sustainability recommendations based on user's selected product
-    similar_recommended_products = recommend_similar_products(products, user_selected_products[0])
+    recommender = ProductRecommender(mongo_uri, db_name, user_case)
+
+    products = list(recommender.products_collection.find())
+
+    recommended_products_ml = recommender.recommend_ml_based(products)
+    print("ML-based Recommendations:", recommended_products_ml)
+
+    similar_recommended_products = recommender.recommend_similar_products()
     print("Sustainability Recommendations:", similar_recommended_products)
 
-# Run the main function
-if __name__ == "__main__":
-    main()
+    user_history_cases = [user_case]
+    user_history_cases.extend(recommended_products_ml)
+    recommender.update_user_history(user_history_cases)
