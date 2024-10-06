@@ -1,0 +1,10 @@
+
+mongo-db/node_modules
+
+mongo-db/.env
+
+ecotag/
+
+.DS_Store
+
+
