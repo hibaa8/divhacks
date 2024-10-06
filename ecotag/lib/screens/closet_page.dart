@@ -12,22 +12,53 @@ class ClosetPage extends StatefulWidget {
 }
 
 class _ClosetPageState extends State<ClosetPage> {
-  final AuthService _authService = AuthService();  // Initialize Auth Service
+  final AuthService _authService = AuthService(); // Initialize Auth Service
+  List<Map<String, dynamic>> items = []; // Declare the items list
+
+  @override
+  void initState() {
+    super.initState();
+    fetchWardrobeItems(); // Fetch wardrobe items
+  }
+
+  Future<void> fetchWardrobeItems() async {
+    // Here, you would typically call your API or database to get wardrobe items.
+    // This is a sample data list for demonstration.
+    setState(() {
+      items = [
+        {
+          'imageUrl': 'https://your-image-url.com/item1.jpg',
+          'title': 'Stylish Shirt',
+          'description': 'A stylish shirt for every occasion.',
+        },
+        {
+          'imageUrl': 'https://your-image-url.com/item2.jpg',
+          'title': 'Comfortable Pants',
+          'description': 'Comfortable pants for daily wear.',
+        },
+        {
+          'imageUrl': 'https://your-image-url.com/item3.jpg',
+          'title': 'Trendy Jacket',
+          'description': 'A trendy jacket to keep you warm.',
+        },
+      ];
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
-      drawer: MyDrawer(),  // Add drawer to the screen
+      drawer: MyDrawer(), // Add drawer to the screen
       body: Column(
         children: [
-          const SizedBox(height: 30),  // Padding at the top
+          const SizedBox(height: 30), // Padding at the top
 
           // Profile Section
           Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             decoration: const BoxDecoration(
-              color: Color(0xFF34716C),  // Profile section background
+              color: Color(0xFF34716C), // Profile section background
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
             ),
             child: Column(
@@ -65,35 +96,52 @@ class _ClosetPageState extends State<ClosetPage> {
             ),
           ),
 
-          const SizedBox(height: 20),  // Spacing before the carousel
+          const SizedBox(height: 20), // Spacing before the carousel
 
           // Carousel Slider
           Expanded(
             child: CarouselSlider(
-              options: CarouselOptions(
-                height: 200,
-                enlargeCenterPage: true,
-                enableInfiniteScroll: false,
-              ),
-              items: [1, 2, 3, 4, 5].map((i) {
+              options: CarouselOptions(height: 400.0),
+              items: items.map((item) {
                 return Builder(
                   builder: (BuildContext context) {
                     return Container(
-                      width: MediaQuery.of(context).size.width * 0.8,  // Adjust width to prevent edge clipping
+                      width: MediaQuery.of(context).size.width * 0.8,
                       margin: const EdgeInsets.symmetric(horizontal: 10.0),
                       decoration: BoxDecoration(
                         color: const Color(0xFF34716C),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Center(
-                        child: Text(
-                          'Liked Item $i',
-                          style: const TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            item['title'],
+                            style: const TextStyle(
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 5),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                            child: Text(
+                              item['description'],
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14.0,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10), // Space between description and icon
+                          Image(
+                            image: const AssetImage('assets/SHIRT.png'), // Heart icon
+                            width: 60,
+                            height: 60,
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -109,7 +157,7 @@ class _ClosetPageState extends State<ClosetPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0), // Add horizontal padding
             child: ElevatedButton(
               onPressed: () async {
-                await _authService.logout();  // Handle logout
+                await _authService.logout(); // Handle logout
                 Navigator.pushReplacementNamed(context, '/login');
               },
               style: ElevatedButton.styleFrom(
@@ -119,7 +167,7 @@ class _ClosetPageState extends State<ClosetPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 minimumSize: const Size(double.infinity, 50), // Full width button
-                elevation: 0,  // Flat, modern button style
+                elevation: 0, // Flat, modern button style
               ),
               child: const Text(
                 'Log Out',
@@ -137,7 +185,3 @@ class _ClosetPageState extends State<ClosetPage> {
     );
   }
 }
-
-
-
-

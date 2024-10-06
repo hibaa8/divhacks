@@ -65,6 +65,8 @@ flutter:
   assets:
     - assets/EcoTag.png
     - assets/CLEAR_EcoTag.png
+    - assets/SHIRT.png
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
