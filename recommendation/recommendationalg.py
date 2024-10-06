@@ -36,7 +36,7 @@ class ProductRecommender:
         tfidf_matrix = vectorizer.fit_transform(descriptions)
 
         numeric_features = np.array([[self.parse_price(product['price']),
-                                      product.get('env-index', 0)]  # Default to 0 if env-index not present
+                                      product.get('env-index', 0)]  
                                      for product in products])
 
         numeric_features = np.nan_to_num(numeric_features, nan=0.0)
@@ -73,15 +73,19 @@ class ProductRecommender:
         recommendations.sort(key=lambda x: (-x[1], x[0]['price']))
         return [r[0] for r in recommendations[:3]]
     
-    def update_user_history(self,cases):
-        self.db['user-history'].insert_many(cases)
+    # def update_user_history(self,cases):
+    #     self.db['user-history'].insert_many(cases)
 
-
+    def update_user_history(self, cases):
+        for case in cases:
+            try:
+                self.db['user-history'].insert_one(case)
+            except pymongo.errors.DuplicateKeyError:
+                print(f"Duplicate entry found for: {case['_id']}, skipping insertion.")
 
 if __name__ == "__main__":
-    mongo_uri = "mongodb+srv://hibaaltaf98:HotChocolate333!@cluster0.eokpf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-    db_name = 'sustainable-products-1'
-    
+    print("\n---Item You Wish to Buy: ---\n")
+
     user_case = {
         "product_details": "90% bamboo, 10% organic cotton",
         "price": "65",
@@ -93,15 +97,20 @@ if __name__ == "__main__":
         "type": "shirt"  
     }
 
-    recommender = ProductRecommender(mongo_uri, db_name, user_case)
-
+    recommender = ProductRecommender(os.getenv("MONGODB_URI"), os.getenv("DB_NAME"), user_case)
     products = list(recommender.products_collection.find())
-
     recommended_products_ml = recommender.recommend_ml_based(products)
-    print("ML-based Recommendations:", recommended_products_ml)
+    print("\n-- ML-based Recommendations: --\n")
+    for case in recommended_products_ml:
+        print(case)
+        print('\n')
 
     similar_recommended_products = recommender.recommend_similar_products()
-    print("Sustainability Recommendations:", similar_recommended_products)
+    print("\n-- Sustainability Recommendations: --\n")
+    for case in similar_recommended_products:
+        print(case) 
+        print('\n')
+
 
     user_history_cases = [user_case]
     user_history_cases.extend(recommended_products_ml)
