@@ -12,9 +12,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Ecotag',
-      theme: ThemeData(
-        primarySwatch: Colors.green, // Set your app theme
-      ),
+
       initialRoute: '/', // Initial route
       routes: {
         '/': (context) => SplashScreen(), // Splash Screen

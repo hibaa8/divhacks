@@ -1,14 +1,50 @@
+import 'package:ecotag/screens/closet_page.dart';
+import 'package:ecotag/screens/feed_page.dart';
+import 'package:ecotag/screens/home_content_page.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:ecotag/widgets/bottom_navbar.dart';
 
-class HomePage extends StatelessWidget {
+
+class HomePage extends StatefulWidget {
+  const HomePage({Key? key}) : super(key: key);
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _currentIndex = 0;
+
+  PageController _pageController = PageController(initialPage: 0);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Home Page'),
+      backgroundColor: const Color(0xFFF8F9FD),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (newIndex) {
+          setState(() {
+            _currentIndex = newIndex;
+          });
+        },
+        children: const <Widget>[
+          FeedPage(),
+          HomeContentPage(),
+          ClosetPage(),
+        ],
+        
       ),
-      body: Center(
-        child: Text('Welcome to EcoTag!'),
+      bottomNavigationBar: MyBottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: (newIndex) {
+          setState(() {
+            _currentIndex = newIndex;
+            _pageController.jumpToPage(newIndex);
+          });
+        },
+  
       ),
     );
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:ecotag/services/auth_service.dart'; 
-import 'home_page.dart';
 
 class LoginPage extends StatelessWidget {
   final AuthService _authService = AuthService();
@@ -15,7 +14,7 @@ class LoginPage extends StatelessWidget {
         children: <Widget>[
           Image.asset('assets/EcoTag.png', height: 200), // Replace 'assets/logo.png' with your logo's asset path
           SizedBox(height: 20), // Add some spacing
-          Text('Ecotag', style: TextStyle(fontSize: 24)), // Replace 'Welcome to MyApp' with your text
+          Text('Ecotag', style: TextStyle(fontSize: 24, color: Color(0xFF6BABAD))), // Replace 'Welcome to MyApp' with your text
           SizedBox(height: 20), // Add some spacing
           ElevatedButton(
             onPressed: () async {
