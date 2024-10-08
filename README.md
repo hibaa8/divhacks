@@ -1,4 +1,4 @@
-# Project for DivHacks'24 - fabrich
+# fabrich - Project for Columbia DivHacks Hackathon 2024
 fabrich is an app that connects individuals seeking sustainable fashion options by providing a curated space to discover eco-friendly clothing choices, tracks sustainability scores, and lets users share their virtual sustainable closet.
 Enter a URL for a product, and:
 1. it provides a sustainability score out of 10
